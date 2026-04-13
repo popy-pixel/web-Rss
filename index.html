@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TermuxIL Breach Monitor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* --- הגדרות עיצוב וצבעים --- */
+        :root, [data-theme="dark"] {
+            --primary: #1a1e24;
+            --secondary: #2c3e50;
+            --accent: #e74c3c; /* אדום טרמוקס */
+            --bg-main: #121212;
+            --bg-card: #1e1e1e;
+            --text-main: #f0f0f0;
+            --text-secondary: #bbbbbb;
+            --border-color: #333333;
+            --shadow: rgba(0,0,0,0.5);
+            --glow: 0 0 10px rgba(231, 76, 60, 0.4); /* אפקט זוהר */
+            
+            /* צבעי קטגוריות */
+            --cat-breach: #e74c3c;
+            --cat-scam: #f39c12;
+            --cat-malware: #8e44ad;
+            --cat-vuln: #3498db;
+            --cat-darkweb: #2c3e50;
+            --cat-critical: #c0392b;
+        }
+
+        [data-theme="light"] {
+            --primary: #2c3e50;
+            --secondary: #ecf0f1;
+            --accent: #e74c3c;
+            --bg-main: #f4f6f7;
+            --bg-card: #ffffff;
+            --text-main: #2c3e50;
+            --text-secondary: #7f8c8d;
+            --border-color: #bdc3c7;
+            --shadow: rgba(0,0,0,0.1);
+            --glow: none;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background 0.3s, color 0.3s; }
+        body { background-color: var(--bg-main); color: var(--text-main); line-height: 1.6; }
+        a { text-decoration: none; color: inherit; }
+
+        /* --- Header --- */
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 10px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 15px var(--shadow);
+            border-bottom: 2px solid var(--accent);
+        }
+
+        .container {
+            width: 95%;
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: 1px;
+        }
+        .logo i { color: var(--accent); }
+        .logo span { color: var(--accent); }
+
+        /* --- שעון סייבר --- */
+        .live-clock {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            padding: 5px 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: var(--glow);
+            min-width: 180px;
+        }
+        .clock-time {
+            font-family: 'Courier New', monospace;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent);
+            text-shadow: var(--glow);
+            line-height: 1.2;
+        }
+        .clock-date {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        /* --- כפתורים ופעולות --- */
+        .header-controls { display: flex; align-items: center; gap: 15px; }
+
+        .theme-switcher {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem;
+        }
+        .theme-switcher:hover { color: var(--accent); border-color: var(--accent); }
+
+        .telegram-link {
+            background: #0088cc;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.9rem;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 136, 204, 0.7); transform: scale(1); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 136, 204, 0); transform: scale(1.05); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 136, 204, 0); transform: scale(1); }
+        }
+
+        /* --- News Ticker --- */
+        .news-ticker {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            height: 35px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+        }
+        .ticker-label {
+            background: var(--accent);
+            color: white;
+            padding: 0 15px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            font-size: 0.85rem;
+            z-index: 2;
+        }
+        .ticker-content {
+            white-space: nowrap;
+            animation: scroll 40s linear infinite;
+            padding-right: 20px;
+            color: var(--text-main);
+            font-size: 0.9rem;
+        }
+        @keyframes scroll { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+
+        /* --- Statistiques Cards --- */
+        .stats-grid {
+            display: grid;
+            /* הפיכת הגריד לשורה מלאה של 6 עמודות */
+            grid-template-columns: repeat(6, 1fr); 
+            width: 100%; 
+            gap: 15px;
+            margin: 20px 0;
+            direction: rtl;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-bottom: 3px solid transparent;
+        }
+
+        .stat-card:hover { 
+            transform: translateY(-5px); 
+            border-color: var(--accent); 
+            box-shadow: var(--glow); 
+        }
+
+        .stat-card i { 
+            font-size: 1.8rem; 
+            margin-bottom: 8px; 
+            display: block; 
+        }
+
+        .stat-num { 
+            font-size: 1.8rem; 
+            font-weight: 800; 
+            display: block; 
+            font-family: 'Courier New', monospace; 
+        }
+
+        .stat-lbl { 
+            font-size: 0.75rem; 
+            color: var(--text-secondary); 
+            font-weight: bold; 
+        }
+
+        /* Colorations pour les cubes */
+        .c-all { color: #2ecc71; border-bottom-color: #2ecc71; }
+        .c-breach { color: #e74c3c; border-bottom-color: #e74c3c; }
+        .c-dark { color: #ffffff; border-bottom-color: #ffffff; }
+        .c-vuln { color: #3498db; border-bottom-color: #3498db; }
+        .c-scam { color: #f39c12; border-bottom-color: #f39c12; }
+        .c-malware { color: #9b59b2; border-bottom-color: #9b59b2; }
+
+        /* --- Layout --- */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        /* --- Sidebar & Terminal --- */
+        .sidebar-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .terminal-window {
+            background: #000;
+            border-radius: 5px;
+            border: 1px solid #333;
+            padding: 10px;
+            height: 250px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            color: #00ff00;
+            direction: ltr;
+            text-align: left;
+        }
+        .terminal-line { margin-bottom: 4px; border-bottom: 1px solid #111; }
+        .terminal-time { color: #888; margin-right: 5px; }
+
+        /* --- Tabs --- */
+        .tabs-container {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            scrollbar-width: thin;
+        }
+        .tab {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+        .tab:hover { background: var(--border-color); }
+        .tab.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+            box-shadow: 0 0 10px rgba(231, 76, 60, 0.3);
+        }
+
+        /* --- Feed Items --- */
+        .feed-container { min-height: 400px; }
+        
+        .feed-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-right: 4px solid var(--accent); /* Accent Border */
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            position: relative;
+            animation: fadeIn 0.5s ease;
+        }
+        .feed-item:hover { transform: translateY(-2px); box-shadow: 0 5px 15px var(--shadow); border-color: var(--text-secondary); }
+
+        .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        
+        .badge {
+            font-size: 0.7rem;
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        /* Badge Colors */
+        .badge.all { background: #555; }
+        .badge.breach { background: var(--cat-breach); }
+        .badge.scam { background: var(--cat-scam); color: #000; }
+        .badge.malware { background: var(--cat-malware); }
+        .badge.vuln { background: var(--cat-vuln); }
+        .badge.darkweb { background: var(--cat-darkweb); border: 1px solid #555; }
+        .badge.critical { background: var(--cat-critical); animation: pulse-red 2s infinite; }
+
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.7); } 70% { box-shadow: 0 0 0 5px rgba(192, 57, 43, 0); } 100% { box-shadow: 0 0 0 0 rgba(192, 57, 43, 0); } }
+
+        .item-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 8px; }
+        .item-title a:hover { color: var(--accent); text-decoration: underline; }
+        
+        .item-desc { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 15px; line-height: 1.5; max-height: 60px; overflow: hidden; text-overflow: ellipsis; }
+
+        .item-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 10px;
+            border-top: 1px dashed var(--border-color);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .meta-data { display: flex; gap: 15px; }
+        .meta-data span { display: flex; align-items: center; gap: 5px; }
+        .meta-data i { color: var(--accent); }
+
+        /* Loader */
+        .loader { text-align: center; padding: 40px; display: none; }
+        .loader i { font-size: 2rem; color: var(--accent); animation: spin 1s infinite linear; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Responsive */
+        @media (max-width: 1100px) {
+            .stats-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 900px) {
+            .dashboard { grid-template-columns: 1fr; }
+            .container { flex-direction: column; gap: 10px; }
+            .header-controls { width: 100%; justify-content: center; }
+            .live-clock { width: 100%; }
+        }
+        @media (max-width: 600px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="container">
+        <div class="logo">
+            <i class="fas fa-terminal"></i> Termux<span>IL</span> Monitor
+        </div>
+
+        <div class="live-clock">
+            <div id="clockTime" class="clock-time">00:00:00</div>
+            <div id="clockDate" class="clock-date">טוען תאריך...</div>
+        </div>
+
+        <div class="header-controls">
+            <button class="theme-switcher" id="themeBtn" title="מצב לילה/יום">
+                <i class="fas fa-moon" id="themeIcon"></i>
+            </button>
+            <a href="https://t.me/PopyFantom1964" target="_blank" class="telegram-link">
+                <i class="fab fa-telegram-plane"></i> ערוץ הטלגרם
+            </a>
+        </div>
+    </div>
+</header>
+
+<div class="news-ticker">
+    <div class="ticker-label">BREAKING NEWS</div>
+    <div class="ticker-content">
+        Alert: Massive phishing campaign targeting Israeli infrastructure detected | Critical: Zero-Day vulnerability in Chrome patched | Dark Web: New database of 5M records for sale | Update: TermuxIL Monitor system active.
+    </div>
+</div>
+
+<main class="container">
+    <div class="stats-grid">
+        <div class="stat-card c-all">
+            <i class="fas fa-layer-group"></i>
+            <span class="stat-num" id="count-all">0</span>
+            <span class="stat-lbl">כל האירועים</span>
+        </div>
+        <div class="stat-card c-breach">
+            <i class="fas fa-database"></i>
+            <span class="stat-num" id="count-breach">0</span>
+            <span class="stat-lbl">הליפות מידע</span>
+        </div>
+        <div class="stat-card c-dark">
+            <i class="fas fa-mask"></i>
+            <span class="stat-num" id="count-darkweb">0</span>
+            <span class="stat-lbl">Dark Web</span>
+        </div>
+        <div class="stat-card c-vuln">
+            <i class="fas fa-bug"></i>
+            <span class="stat-num" id="count-vuln">0</span>
+            <span class="stat-lbl">פגיעויות</span>
+        </div>
+        <div class="stat-card c-scam">
+            <i class="fas fa-user-shield"></i>
+            <span class="stat-num" id="count-scam">0</span>
+            <span class="stat-lbl">הונאות</span>
+        </div>
+        <div class="stat-card c-malware">
+            <i class="fas fa-virus-slash"></i>
+            <span class="stat-num" id="count-malware">0</span>
+            <span class="stat-lbl">נוזקות</span>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        
+        <aside>
+            <div class="sidebar-card">
+                <h3 style="color:var(--accent); margin-bottom:10px; display:flex; justify-content:space-between;">
+                    <span><i class="fas fa-code"></i> System Log</span>
+                    <span id="activeSourcesCount" style="font-size:0.8rem; background:var(--bg-main); padding:2px 6px; border-radius:4px;">0 Sources</span>
+                </h3>
+                <div id="terminal" class="terminal-window">
+                    <div class="terminal-line"><span class="terminal-time">[INIT]</span> System initialized...</div>
+                </div>
+            </div>
+            
+            <div class="sidebar-card">
+                <h3>אודות המערכת</h3>
+                <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:10px;">
+                    מערכת ניטור בזמן אמת לאירועי סייבר, הליפות מידע והונאות רשת. המידע נאסף ממקורות בלויים וממקורות Dark Web.
+                </p>
+            </div>
+        </aside>
+
+        <section>
+            <div class="tabs-container">
+                <button class="tab active" onclick="filterFeed('all', this)">All Incidents</button>
+                <button class="tab" onclick="filterFeed('breach', this)">Data Breaches</button>
+                <button class="tab" onclick="filterFeed('scam', this)">Scams & Fraud</button>
+                <button class="tab" onclick="filterFeed('malware', this)">Malware</button>
+                <button class="tab" onclick="filterFeed('vuln', this)">Vulnerabilities</button>
+                <button class="tab" onclick="filterFeed('darkweb', this)">Dark Web</button>
+                <button class="tab" onclick="filterFeed('critical', this)">Critical Alerts</button>
+            </div>
+
+            <div id="loading" class="loader">
+                <i class="fas fa-circle-notch"></i>
+                <p style="margin-top:10px;">טוען נתונים ממקורות RSS...</p>
+            </div>
+
+            <div id="feedContainer" class="feed-container">
+            </div>
+        </section>
+    </div>
+</main>
+
+<script>
+    /* =========================================
+       1. הגדרות מערכת ושעון
+       ========================================= */
+    
+    // שעון דיגיטלי
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('clockTime').innerText = now.toLocaleTimeString('he-IL', { hour12: false });
+        document.getElementById('clockDate').innerText = now.toLocaleDateString('he-IL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // החלפת ערכת נושא (Dark/Light)
+    const themeBtn = document.getElementById('themeBtn');
+    const themeIcon = document.getElementById('themeIcon');
+    themeBtn.onclick = () => {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+        themeIcon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+    };
+
+    // טרמינל לוגים
+    const terminal = document.getElementById('terminal');
+    function log(msg, type="INFO") {
+        const time = new Date().toLocaleTimeString('en-GB');
+        const color = type === "ERROR" ? "#ff4444" : (type === "SUCCESS" ? "#00ff00" : "#cccccc");
+        terminal.innerHTML += `<div class="terminal-line" style="color:${color}"><span class="terminal-time">[${time}]</span> ${msg}</div>`;
+        terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    /* =========================================
+       2. ניהול RSS ונתונים
+       ========================================= */
+    
+    let ALL_INCIDENTS = []; // מערך ראשי
+
+    const RSS_CONFIG = [
+        { name: 'The Hacker News', url: 'https://feeds.feedburner.com/TheHackersNews' },
+        { name: 'BleepingComputer', url: 'https://www.bleepingcomputer.com/feed/' },
+        { name: 'Krebs on Security', url: 'https://krebsonsecurity.com/feed/' },
+        { name: 'Dark Reading', url: 'https://www.darkreading.com/rss.xml' },
+        { name: 'Threatpost', url: 'https://threatpost.com/feed/' },
+        { name: 'US-CERT', url: 'https://www.cisa.gov/uscert/ncas/alerts.xml' },
+        { name: 'Exploit-DB', url: 'https://www.exploit-db.com/rss.xml' },
+        // --- 1. ISRAEL & MIDDLE EAST (20 NODES) ---
+    { name: 'מערך הסייבר הלאומי', url: 'https://www.gov.il/he/api/Publication/GetRSS?OfficeId=7876a380-4927-414f-9580-c5299863a3d5', icon: 'fas fa-shield-alt' },
+    { name: 'Israel Defense Cyber', url: 'https://www.israeldefense.co.il/he/rss.xml', icon: 'fas fa-star-of-david' },
+    { name: 'The Verifier IL', url: 'https://theverifier.co.il/feed/', icon: 'fas fa-mobile-alt' },
+    { name: 'Chiportal IL', url: 'https://chiportal.co.il/category/cyber/feed/', icon: 'fas fa-microchip' },
+    { name: 'PC.co.il Security', url: 'https://www.pc.co.il/category/information-security/feed/', icon: 'fas fa-laptop' },
+    { name: 'Walla Tech', url: 'https://rss.walla.co.il/feed/6', icon: 'fas fa-globe' },
+    { name: 'Ynet Digital', url: 'https://www.ynet.co.il/Integration/StoryRss544.xml', icon: 'fas fa-news' },
+    { name: 'Geektime Cyber', url: 'https://www.geektime.co.il/feed/', icon: 'fas fa-bolt' },
+    { name: 'Calcalist Tech', url: 'https://www.calcalist.co.il/GeneralRSS/0,16335,L-3,00.xml', icon: 'fas fa-chart-line' },
+    { name: 'Haaretz Tech', url: 'https://www.haaretz.co.il/cmlink/1.1553556', icon: 'fas fa-font' },
+    { name: 'WAM Tech (UAE)', url: 'https://www.wam.ae/en/rss/sci-tech', icon: 'fas fa-mosque' },
+    { name: 'Khaleej Times Tech', url: 'https://www.khaleejtimes.com/rss-feed/technology', icon: 'fas fa-satellite' },
+    { name: 'Gulf News Tech', url: 'https://gulfnews.com/rss/technology', icon: 'fas fa-broadcast-tower' },
+    { name: 'Al Jazeera Cyber', url: 'https://www.aljazeera.com/xml/rss/all.xml', icon: 'fas fa-rss' },
+    { name: 'Arab News Tech', url: 'https://www.arabnews.com/cat/7/rss.xml', icon: 'fas fa-globe-africa' },
+    { name: 'Mideast Cyber Node', url: 'https://www.cyberint.com/blog/feed/', icon: 'fas fa-map' },
+    { name: 'Intel Node IL-30', url: 'https://research.checkpoint.com/feed/', icon: 'fas fa-microscope' },
+    { name: "SOCRadar - Israel APT", url: "https://socradar.io/apt-campaign-targeting-infrastructure/", category: "Israel & Middle East", icon: "fas fa-flag" },
+    { name: "ThreatConnect - Israel Hospital", url: "https://threatconnect.com/blog/israeli-hospital-ransomware-attack", category: "Israel & Middle East", icon: "fas fa-hospital" },
+    { name: 'ISOC Israel', url: 'https://www.isoc.org.il', icon: 'fas fa-flag' },
+    { name: 'Israel Cyber Directorate', url: 'https://www.gov.il/he/departments/cyber-security', icon: 'fas fa-shield-alt' },
+    { name: 'Interpol', url: 'https://www.interpol.int', icon: 'fas fa-globe' },
+    { name: 'Europol', url: 'https://www.europol.europa.eu', icon: 'fas fa-globe-europe' },
+    { name: "Termux Israel (Telegram)", url: "https://t.me/termuxisrael2", category: "Israel & Middle East", icon: "fab fa-telegram" },
+
+    // --- 2. DATABASE LEAKS & BREACHES (18 NODES) ---
+    { name: 'DataBreaches.net', url: 'https://www.databreaches.net/feed/', icon: 'fas fa-database' },
+    { name: 'Leak-Lookup Monitor', url: 'https://securityaffairs.co/wordpress/feed', icon: 'fas fa-unlock' },
+    { name: 'Have I Been Pwned News', url: 'https://feeds.feedburner.com/HaveIBeenPwned', icon: 'fas fa-search-plus' },
+    { name: 'BreachForums Monitor', url: 'https://www.hackread.com/feed/', icon: 'fas fa-folder-open' },
+    { name: 'Credential Leak RU', url: 'https://www.securitylab.ru/_services/export/rss/', icon: 'fas fa-archive' },
+    { name: 'SQL Dump Node 1', url: 'https://dailydarkweb.net/feed/', icon: 'fas fa-file-csv' },
+    { name: 'Database Incident Node', url: 'https://www.infosecurity-magazine.com/rss/news/', icon: 'fas fa-key' },
+    { name: 'Combo List Archive', url: 'https://thehackernews.com/feeds/posts/default', icon: 'fas fa-list' },
+    { name: 'Data Leak Central', url: 'https://www.cyberint.com/blog/feed/', icon: 'fas fa-file-export' },
+    { name: 'Identity Leak Node', url: 'https://www.bleepingcomputer.com/feed/', icon: 'fas fa-id-card' },
+    { name: 'Cyber Privacy Feed', url: 'https://privacy.com/rss', icon: 'fas fa-user-shield' },
+    { name: 'Security Week DB', url: 'https://feeds.feedburner.com/securityweek', icon: 'fas fa-database' },
+    { name: 'Dark Reading Data', url: 'https://www.darkreading.com/rss.xml', icon: 'fas fa-table' },
+    { name: 'DB Leak Node 30', url: 'https://www.scmagazine.com/rss', icon: 'fas fa-folder' },
+    { name: "SpyCloud - Massive Credential DB", url: "https://spycloud.com/research/massive-credential-database-exposed",  icon: "fas fa-database" },
+    { name: "SpyCloud - Exposed API Keys", url: "https://spycloud.com/research/exposed-api-keys-code-repositories",  icon: "fas fa-key" },
+    { name: "Krebs - Healthcare Breach", url: "https://krebsonsecurity.com/2025/03/major-healthcare-breach-exposes-patient-records/",  icon: "fas fa-notes-medical" },
+    { name: 'BreachForums', url: 'https://breachforums.st', icon: 'fas fa-database' },
+    { name: 'Leak SX', url: 'https://leak.sx', icon: 'fas fa-database' },
+    { name: 'Have I Been Pwned', url: 'https://haveibeenpwned.com', icon: 'fas fa-user-shield' },
+    { name: 'IntelX', url: 'https://intelx.io', icon: 'fas fa-search' },
+    { name: 'DeHashed', url: 'https://dehashed.com', icon: 'fas fa-layer-group' },
+    { name: 'BreachDirectory', url: 'https://breachdirectory.org', icon: 'fas fa-folder-open' },
+    { name: "DarkOwl - Airline Data Leak", url: "https://www.darkowl.com/blog/airline-data-leak",  icon: "fas fa-plane-arrival" },
+
+    // --- 3. DARKNET & RANSOMWARE (18 NODES) ---
+    { name: 'DarknetLive', url: 'https://darknetlive.com/index.xml', icon: 'fas fa-eye-slash' },
+    { name: 'Ransomware.live', url: 'https://www.ransomware.live/rss.xml', icon: 'fas fa-skull' },
+    { name: 'Daily Dark Web', url: 'https://dailydarkweb.net/feed/', icon: 'fas fa-user-secret' },
+    { name: 'Tor Security Blog', url: 'https://blog.torproject.org/feed/', icon: 'fab fa-galactic-republic' },
+    { name: 'DeepDot Archive', url: 'https://securityaffairs.co/wordpress/feed', icon: 'fas fa-network-wired' },
+    { name: 'LockBit Monitor', url: 'https://www.cyberint.com/blog/feed/', icon: 'fas fa-biohazard' },
+    { name: 'XSS/Exploit Feed', url: 'https://thehackernews.com/feeds/posts/default', icon: 'fas fa-mask' },
+    { name: 'Underground RU', url: 'https://www.antimalware.ru/rss/news', icon: 'fas fa-ghost' },
+    { name: 'Hacker Ninja Node', url: 'https://www.hackread.com/feed/', icon: 'fas fa-user-ninja' },
+    { name: 'Onion Crawler News', url: 'https://darknetlive.com/post/index.xml', icon: 'fas fa-search' },
+    { name: 'Cyber Criminal Watch', url: 'https://www.recordedfuture.com/feed', icon: 'fas fa-eye' },
+    { name: 'Malware Traffic Feed', url: 'https://malware-traffic-analysis.net/blog-posts.xml', icon: 'fas fa-exchange-alt' },
+    { name: 'Threat Intel Node 30', url: 'https://unit42.paloaltonetworks.com/feed/', icon: 'fas fa-skull-crossbones' },
+    { name: 'Flashpoint - Ransomware Mfg', url: 'https://www.flashpoint-intel.com/blog/ransomware-manufacturing-sector', icon: 'fas fa-biohazard' },
+    { name: 'BleepingComputer - Municipal Ransomware', url: 'https://www.bleepingcomputer.com/news/security/ransomware-attack-cripples-municipal-systems/', icon: 'fas fa-building' },
+    { name: 'CrowdStrike - Education Ransomware', url: 'https://www.crowdstrike.com/blog/new-ransomware-targeting-education/', icon: 'fas fa-graduation-cap' },
+    { name: 'ZeroFox - Crypto Scam', url: 'https://www.zerofox.com/blog/cryptocurrency-scam-social-media', icon: 'fab fa-bitcoin' },
+    { name: 'Ransomware Live', url: 'https://www.ransomware.live', icon: 'fas fa-lock-open' },
+    { name: 'RansomLook', url: 'https://www.ransomlook.io', icon: 'fas fa-eye' },
+    { name: 'DarknetLive', url: 'https://darknetlive.com', icon: 'fas fa-mask' },
+    { name: 'NoMoreRansom', url: 'https://www.nomoreransom.org', icon: 'fas fa-unlock' },
+    { name: 'Dark.Fail', url: 'https://dark.fail', icon: 'fas fa-network-wired' },
+    { name: 'Tor Taxi', url: 'https://tor.taxi', icon: 'fas fa-taxi' },
+    { name: 'The Hacker News - Banking Phishing', url: 'https://thehackernews.com/2025/03/new-phishing-campaign-targets-banking.html', icon: 'fas fa-user-mask' },
+
+
+
+    // --- 4. GLOBAL GOVERNMENT & MILITARY (16 NODES) ---
+    { name: 'CISA Alerts (USA)', url: 'https://www.cisa.gov/cybersecurity-advisories/all.xml', icon: 'fas fa-flag-usa' },
+    { name: 'FBI Cyber Division', url: 'https://www.fbi.gov/feeds/cyber-news/rss.xml', icon: 'fas fa-landmark' },
+    { name: 'NCSC Intelligence (UK)', url: 'https://www.ncsc.gov.uk/api/1/services/alerts/rss.xml', icon: 'fas fa-crown' },
+    { name: 'NATO Cyber Defense', url: 'https://www.ccdcoe.org/rss.xml', icon: 'fas fa-fighter-jet' },
+    { name: 'CERT-EU News', url: 'https://cert.europa.eu/feed/', icon: 'fas fa-euro-sign' },
+    { name: 'AusCyber Center', url: 'https://www.cyber.gov.au/acsc/view-all-content/rss', icon: 'fas fa-map-marked-alt' },
+    { name: 'Canada Cyber Center', url: 'https://cyber.gc.ca/en/rss/advisories-and-alerts', icon: 'fas fa-leaf' },
+    { name: 'NCSC NL', url: 'https://www.ncsc.nl/rss/actueel', icon: 'fas fa-wind' },
+    { name: 'JP-CERT (Japan)', url: 'https://www.jpcert.or.jp/english/rss/jpcert.rdf', icon: 'fas fa-torii-gate' },
+    { name: 'ENISA (EU)', url: 'https://www.enisa.europa.eu/news/news-items/RSS', icon: 'fas fa-university' },
+    { name: 'CERT-FR (France)', url: 'https://www.cert.ssi.gouv.fr/feed/', icon: 'fas fa-flag' },
+    { name: 'GovNode 30', url: 'https://www.ncsc.gov.ie/feed/', icon: 'fas fa-shield-alt' },
+    { name: "Recorded Future - Critical Infra", url: "https://recordedfuture.com/blog/state-sponsored-critical-infrastructure", category: "Global Government & Military", icon: "fas fa-monument" },
+    { name: "CISA - Critical Vulnerability", url: "https://www.cisa.gov/news-events/cybersecurity-advisories/critical-vulnerability-popular-framework", category: "Global Government & Military", icon: "fas fa-shield-gov" },
+    { name: "ZeroFox - Interpol Operation", url: "https://www.zerofox.com/blog/interpol-operation-disrupts-phishing-infrastructure/", category: "Global Government & Military", icon: "fas fa-balance-scale" },
+    { name: 'MITRE ATT&CK', url: 'https://attack.mitre.org', icon: 'fas fa-crosshairs' },
+    { name: 'NVD NIST', url: 'https://nvd.nist.gov', icon: 'fas fa-book' },
+    { name: 'Shadowserver', url: 'https://www.shadowserver.org', icon: 'fas fa-cloud' },
+    { name: 'AlienVault OTX', url: 'https://otx.alienvault.com', icon: 'fas fa-radar' },
+    { name: 'OpenCTI', url: 'https://www.opencti.io', icon: 'fas fa-project-diagram' },
+    { name: "ThreatConnect - Financial Phishing", url: "https://threatconnect.com/blog/financial-phishing-campaign", category: "Global Government & Military", icon: "fas fa-money-bill-wave" },
+
+
+    // --- 5. RUSSIAN & ASIAN INTEL (20 NODES) ---
+    { name: 'SecurityLab RU', url: 'https://www.securitylab.ru/_services/export/rss/', icon: 'fas fa-flask' },
+    { name: 'Antimalware RU', url: 'https://www.antimalware.ru/rss/news', icon: 'fas fa-virus-slash' },
+    { name: 'Habr InfoSec RU', url: 'https://habr.com/ru/rss/hub/infosecurity/all/', icon: 'fab fa-hacker-news' },
+    { name: 'Cyber Express IN', url: 'https://thecyberexpress.com/feed/', icon: 'fas fa-sun' },
+    { name: 'CERT-In India', url: 'https://www.cert-in.org.in/rss.xml', icon: 'fas fa-building' },
+    { name: 'TechNode China', url: 'https://technode.com/feed/', icon: 'fas fa-dragon' },
+    { name: 'SCMP Tech Asia', url: 'https://www.scmp.com/rss/318214/feed', icon: 'fas fa-broadcast-tower' },
+    { name: 'Ru-Center News', url: 'https://www.nic.ru/about/news/rss/', icon: 'fas fa-server' },
+    { name: 'CyberEra India', url: 'https://cyberera.com.ng/feed/', icon: 'fas fa-microchip' },
+    { name: 'CNews RU Security', url: 'https://www.cnews.ru/incidents/rss', icon: 'fas fa-exclamation-circle' },
+    { name: 'Indian Cyber Watch', url: 'https://www.cybersecurityinsiders.com/feed/', icon: 'fas fa-eye' },
+    { name: 'Japan Times Tech', url: 'https://www.japantimes.co.jp/news_category/tech/feed/', icon: 'fas fa-globe-asia' },
+    { name: 'Flashpoint - APT Targets', url: 'https://www.flashpoint-intel.com/blog/apt-targets-critical-infrastructure', icon: 'fas fa-user-secret' },
+    { name: 'Recorded Future - VPN Zero-Day', url: 'https://recordedfuture.com/blog/vpn-zero-day-vulnerability', icon: 'fas fa-globe-asia' },
+    { name: 'RiskIQ - Supply Chain Attack', url: 'https://www.riskiq.com/blog/supply-chain-attack-infrastructure', icon: 'fas fa-link' },
+    { name: 'Rapid7 - Apache Struts', url: 'https://www.rapid7.com/blog/apache-struts-vulnerability-exploitation', icon: 'fas fa-bug' },
+    { name: 'CrowdStrike - MFA Bypass', url: 'https://www.crowdstrike.com/blog/mfa-bypass-token-theft', icon: 'fas fa-fingerprint' },
+    { name: 'RiskIQ - WordPress Vulnerability', url: 'https://www.riskiq.com/blog/critical-wordpress-plugin-vulnerability/', icon: 'fab fa-wordpress' },
+    { name: 'Rapid7 - Medical Devices', url: 'https://www.rapid7.com/blog/medical-device-vulnerabilities-remote-control/', icon: 'fas fa-heartbeat' },
+    { name: 'XSS Forum', url: 'https://xss.is', icon: 'fas fa-bug' },
+    { name: 'Exploit IN', url: 'https://exploit.in', icon: 'fas fa-code' },
+    { name: 'Antichat', url: 'https://forum.antichat.com', icon: 'fas fa-comments' },
+    { name: '0Day Today', url: 'https://0day.today', icon: 'fas fa-skull-crossbones' },
+    { name: 'KernelMode', url: 'https://kernelmode.info', icon: 'fas fa-microchip' },
+    { name: 'FreeHacks RU', url: 'https://freehacks.ru', icon: 'fas fa-terminal' },
+    { name: 'SOCRadar - Energy Phishing', url: 'https://socradar.io/energy-sector-phishing-campaign', icon: 'fas fa-bolt' },
+    ];
+
+    document.getElementById('activeSourcesCount').innerText = `${RSS_CONFIG.length} Sources`;
+
+    // סיווג אוטומטי לקטגוריות
+    function detectCategory(title, description) {
+        const txt = (title + " " + description).toLowerCase();
+        
+        if (txt.includes('critical') || txt.includes('zero-day') || txt.includes('urgent')) return 'critical';
+        if (txt.includes('ransom') || txt.includes('encrypt') || txt.includes('virus') || txt.includes('trojan')) return 'malware';
+        if (txt.includes('phish') || txt.includes('scam') || txt.includes('fraud') || txt.includes('fake')) return 'scam';
+        if (txt.includes('leak') || txt.includes('breach') || txt.includes('database') || txt.includes('dump')) return 'breach';
+        if (txt.includes('cve') || txt.includes('vulnerab') || txt.includes('exploit') || txt.includes('patch')) return 'vuln';
+        if (txt.includes('dark') || txt.includes('onion') || txt.includes('market') || txt.includes('tor')) return 'darkweb';
+        
+        return 'all'; // ברירת מחדל
+    }
+
+    // משיכת נתונים
+    async function fetchAllFeeds() {
+        const loading = document.getElementById('loading');
+        loading.style.display = 'block';
+        ALL_INCIDENTS = []; // איפוס
+        log("Starting RSS Fetch sequence...", "INFO");
+
+        // פרוקסי לעקיפת CORS
+        const PROXY = "https://api.rss2json.com/v1/api.json?rss_url=";
+
+        for (const source of RSS_CONFIG) {
+            try {
+                log(`Connecting to: ${source.name}...`, "INFO");
+                const response = await fetch(PROXY + encodeURIComponent(source.url));
+                const data = await response.json();
+
+                if (data.status === 'ok') {
+                    data.items.forEach(item => {
+                        // ניקוי תגיות HTML מהתיאור
+                        const cleanDesc = item.description ? item.description.replace(/<[^>]*>?/gm, '').substring(0, 180) + '...' : 'No description available.';
+                        
+                        ALL_INCIDENTS.push({
+                            title: item.title,
+                            description: cleanDesc,
+                            link: item.link,
+                            pubDate: item.pubDate,
+                            source: source.name,
+                            category: detectCategory(item.title, cleanDesc)
+                        });
+                    });
+                    log(`Loaded ${data.items.length} items from ${source.name}`, "SUCCESS");
+                } else {
+                    log(`Failed to load ${source.name}`, "ERROR");
+                }
+            } catch (e) {
+                log(`Connection error: ${source.name}`, "ERROR");
+            }
+        }
+
+        // מיון לפי תאריך (הכי חדש למעלה)
+        ALL_INCIDENTS.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+        
+        loading.style.display = 'none';
+        updateStats(); // Mise à jour des statistiques
+        renderFeed(ALL_INCIDENTS);
+        log(`Sync Complete. Total Incidents: ${ALL_INCIDENTS.length}`, "SUCCESS");
+    }
+
+    /* =========================================
+       3. רינדור (הצגה)
+       ========================================= */
+    
+    function renderFeed(items) {
+        const container = document.getElementById('feedContainer');
+        container.innerHTML = "";
+
+        if (items.length === 0) {
+            container.innerHTML = `<div style="text-align:center; padding:30px; color:var(--text-secondary);">לא נמצאו נתונים להצגה בקטגוריה זו.</div>`;
+            return;
+        }
+
+        items.forEach(item => {
+            const dateObj = new Date(item.pubDate);
+            const dateStr = dateObj.toLocaleDateString('he-IL');
+            const timeStr = dateObj.toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit'});
+            
+            // המרה לשם קטגוריה יפה לתצוגה
+            const catDisplay = item.category === 'vuln' ? 'VULNERABILITY' : item.category.toUpperCase();
+
+            const html = `
+                <div class="feed-item">
+                    <div class="item-header">
+                        <span class="badge ${item.category}">${catDisplay}</span>
+                        <small style="color:var(--text-secondary);"><i class="fas fa-rss"></i> ${item.source}</small>
+                    </div>
+                    <div class="item-title"><a href="${item.link}" target="_blank">${item.title}</a></div>
+                    <div class="item-desc">${item.description}</div>
+                    <div class="item-meta">
+                        <div class="meta-data">
+                            <span><i class="far fa-clock"></i> שעה: ${timeStr}</span>
+                            <span><i class="far fa-calendar-alt"></i> תאריך: ${dateStr}</span>
+                        </div>
+                        <div><a href="${item.link}" target="_blank" style="color:var(--accent); font-size:0.8rem;">קרא עוד <i class="fas fa-arrow-left"></i></a></div>
+                    </div>
+                </div>
+            `;
+            container.innerHTML += html;
+        });
+    }
+
+    /* =========================================
+       4. Mise à jour des statistiques
+       ========================================= */
+
+    function updateStats() {
+        const countByCategory = (cat) => ALL_INCIDENTS.filter(i => i.category === cat).length;
+        
+        document.getElementById('count-all').innerText = ALL_INCIDENTS.length;
+        document.getElementById('count-breach').innerText = countByCategory('breach');
+        document.getElementById('count-darkweb').innerText = countByCategory('darkweb');
+        document.getElementById('count-vuln').innerText = countByCategory('vuln');
+        document.getElementById('count-scam').innerText = countByCategory('scam');
+        document.getElementById('count-malware').innerText = countByCategory('malware');
+    }
+
+    // סינון בלחיצה על טאב
+    window.filterFeed = function(category, btn) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+
+        log(`Filter applied: ${category.toUpperCase()}`, "INFO");
+
+        if (category === 'all') {
+            renderFeed(ALL_INCIDENTS);
+        } else {
+            const filtered = ALL_INCIDENTS.filter(i => i.category === category);
+            renderFeed(filtered);
+        }
+    };
+
+    // הפעלה ראשונית
+    fetchAllFeeds();
+
+</script>
+
+</body>
+</html>
